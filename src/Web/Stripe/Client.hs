@@ -24,10 +24,11 @@ module Web.Stripe.Client
     ) where
 
 import           Control.Monad         (MonadPlus, join, liftM, mzero)
+import           Control.Monad.Base    (MonadBase (..))
 import           Control.Monad.Error   (Error, ErrorT, MonadError, MonadIO,
                                         noMsg, runErrorT, strMsg, throwError)
 import           Control.Monad.State   (MonadState, StateT, get, runStateT)
-import           Control.Monad.Trans   (liftIO)
+import           Control.Monad.Trans   (MonadTrans (..), liftIO)
 import           Data.Aeson            (FromJSON (..), Value (..), decode',
                                         eitherDecode', (.:), (.:?))
 import           Data.Aeson.Types      (parseMaybe)
@@ -145,6 +146,10 @@ newtype StripeT m a = StripeT
                 , MonadError StripeFailure
                 , MonadState StripeConfig
                 )
+
+instance MonadTrans StripeT where
+    lift = StripeT . lift . lift
+
 
 -- | Runs the 'StripeT' monad transformer with a given 'StripeConfig'. This will
 --   handle all of the authorization dance steps necessary to utilize the

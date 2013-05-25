@@ -23,6 +23,8 @@ import           Control.Applicative   ((<$>), (<*>))
 import           Control.Exception     (Exception, SomeException (..))
 import           Control.Monad         (liftM, mzero)
 import           Control.Monad.Error   (MonadIO)
+import           Control.Monad.State   (get)
+import           Control.Monad.Trans   (lift)
 import           Data.Aeson            (FromJSON (..), Value (..), decode, (.:))
 import           Data.ByteString.Char8 (ByteString, pack)
 import qualified Data.ByteString.Char8 as B
@@ -33,8 +35,8 @@ import           Network.HTTP.Conduit  (Request (..), Response (..), httpLbs,
                                         parseUrl, urlEncodedBody, withManager)
 import           Network.HTTP.Types    (Query, Status (..), StdMethod (..),
                                         hAccept, renderQuery)
-import           Web.Stripe.Client     (APIKey (..), StripeRequest (..),
-                                        StripeT, query)
+import           Web.Stripe.Client     (APIKey (..), StripeConfig (..),
+                                        StripeRequest (..), StripeT, query)
 import           Web.Stripe.Customer   (CustomerId (..))
 import           Web.Stripe.Token      (Token, tokRq)
 import           Web.Stripe.Utils      (optionalArgs, textToByteString)
@@ -92,6 +94,13 @@ refreshTokenQuery mScope token =
 
 
 -- HTTP ------------------------------------------------------------------------
+
+getAcc :: AuthCode -> StripeT IO (Maybe StripeConnectTokens)
+getAcc code = do
+  cfg <- get
+  lift $ getAccessToken (key cfg) code
+
+
 getAccessToken :: APIKey -> AuthCode -> IO (Maybe StripeConnectTokens)
 getAccessToken key code = do
   req <- updateHeaders <$> parseUrl (B.unpack accessTokenURL)
